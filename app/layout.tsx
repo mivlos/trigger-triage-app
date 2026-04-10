@@ -12,8 +12,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className="dark">
+      <body className="bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-zinc-100">
+        {children}
+      </body>
     </html>
   );
 }
