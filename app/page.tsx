@@ -22,6 +22,26 @@ interface Stats {
   };
 }
 
+const ScoreBadge = ({ score }: { score: number }) => {
+  let bgColor = 'bg-blue-600';
+  let label = 'LOW';
+  
+  if (score >= 8) {
+    bgColor = 'bg-red-600';
+    label = 'HIGH';
+  } else if (score >= 6) {
+    bgColor = 'bg-yellow-500';
+    label = 'MED';
+  }
+  
+  return (
+    <div className={`${bgColor} text-white rounded-full w-16 h-16 flex flex-col items-center justify-center flex-shrink-0`}>
+      <div className="text-2xl font-bold">{score.toFixed(1)}</div>
+      <div className="text-xs font-semibold">{label}</div>
+    </div>
+  );
+};
+
 export default function Home() {
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -30,6 +50,7 @@ export default function Home() {
   const [filterScore, setFilterScore] = useState(0);
   const [approved, setApproved] = useState<string[]>([]);
   const [rejected, setRejected] = useState<string[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     loadTriggers();
@@ -43,8 +64,10 @@ export default function Home() {
       const data = await res.json();
       setTriggers(data.triggers);
       setStats(data.stats);
+      setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -70,68 +93,72 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          <p className="mt-4 text-lg text-gray-700">Loading triggers...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-2 border-zinc-700 border-t-red-600"></div>
+          <p className="mt-6 text-zinc-300 text-lg">Loading triggers...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">🎯 Trigger Triage</h1>
-          <p className="text-lg text-gray-700">Approve or reject pending GTM triggers</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
-
-        {/* Stats */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-3xl font-bold text-indigo-600">{stats.pending}</div>
-              <div className="text-sm text-gray-600">Pending</div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-3xl font-bold text-green-600">{stats.byScore.high}</div>
-              <div className="text-sm text-gray-600">HIGH (8.0+)</div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-3xl font-bold text-yellow-600">{stats.byScore.medium}</div>
-              <div className="text-sm text-gray-600">MEDIUM (6-8)</div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-3xl font-bold text-blue-600">{stats.avgScore}</div>
-              <div className="text-sm text-gray-600">Avg Score</div>
-            </div>
-          </div>
-        )}
-
-        {/* Actions & Filter */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-zinc-100">
+      {/* Header */}
+      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center justify-between">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by minimum score:
-              </label>
-              <div className="flex gap-2">
+              <h1 className="text-4xl font-bold text-white mb-2">Trigger Triage</h1>
+              <p className="text-zinc-400">Approve or reject pending GTM triggers</p>
+            </div>
+            <div className="text-right">
+              <div className="text-4xl font-bold text-red-500">{filtered.length}</div>
+              <div className="text-sm text-zinc-400">Awaiting Decision</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-950 border border-red-800 text-red-200 px-6 py-4 m-6 rounded-lg">
+          <div className="font-semibold">Error loading triggers</div>
+          <div className="text-sm mt-1">{error}</div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Stats Grid */}
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            {[
+              { label: 'Pending', value: stats.pending, color: 'from-zinc-700 to-zinc-800' },
+              { label: 'HIGH (8+)', value: stats.byScore.high, color: 'from-red-700 to-red-800' },
+              { label: 'MED (6-8)', value: stats.byScore.medium, color: 'from-yellow-700 to-yellow-800' },
+              { label: 'Avg Score', value: stats.avgScore, color: 'from-blue-700 to-blue-800' },
+            ].map((stat, idx) => (
+              <div key={idx} className={`bg-gradient-to-br ${stat.color} rounded-xl p-6 border border-zinc-700`}>
+                <div className="text-3xl font-bold text-white">{stat.value}</div>
+                <div className="text-xs text-zinc-400 mt-2 font-semibold">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-zinc-300 mb-3">Filter by Score</label>
+              <div className="flex gap-2 flex-wrap">
                 {[0, 6, 7, 8, 9].map(score => (
                   <button
                     key={score}
                     onClick={() => setFilterScore(score)}
-                    className={`px-3 py-2 rounded text-sm font-medium transition ${
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
                       filterScore === score
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                     }`}
                   >
                     {score === 0 ? 'All' : `${score}+`}
@@ -140,96 +167,79 @@ export default function Home() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quick approve:
-              </label>
+              <label className="block text-sm font-semibold text-zinc-300 mb-3">Quick Approve</label>
               <div className="flex gap-2">
                 {[3, 5, 10].map(n => (
                   <button
                     key={n}
                     onClick={() => handleQuickApprove(n)}
-                    className="px-4 py-2 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 transition"
+                    className="px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition"
                   >
                     Top {n}
                   </button>
                 ))}
               </div>
             </div>
-          </div>
-          <div className="text-sm text-gray-600">
-            Approved: <span className="font-bold text-green-600">{approved.length}</span> | Rejected:{' '}
-            <span className="font-bold text-red-600">{rejected.length}</span> | Remaining:{' '}
-            <span className="font-bold text-blue-600">{triggers.length}</span>
+            <div>
+              <label className="block text-sm font-semibold text-zinc-300 mb-3">Status</label>
+              <div className="text-sm">
+                <div>✓ <span className="text-green-400">{approved.length}</span> Approved</div>
+                <div>✗ <span className="text-red-400">{rejected.length}</span> Rejected</div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Triggers List */}
         <div className="space-y-4">
           {filtered.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-lg text-gray-600">No triggers to review</p>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-12 text-center">
+              <p className="text-zinc-400 text-lg">No triggers to review</p>
             </div>
           ) : (
             filtered.map(trigger => (
               <div
                 key={trigger.id}
-                className="bg-white rounded-lg shadow hover:shadow-lg transition p-6"
+                className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-zinc-700 transition"
               >
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex gap-6 mb-4">
+                  <ScoreBadge score={trigger.score} />
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-white font-bold text-lg ${
-                          trigger.score >= 8
-                            ? 'bg-red-600'
-                            : trigger.score >= 6
-                            ? 'bg-yellow-600'
-                            : 'bg-blue-600'
-                        }`}
-                      >
-                        {trigger.score.toFixed(1)}
-                      </span>
-                      <h3 className="text-xl font-bold text-gray-900">{trigger.name}</h3>
-                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">{trigger.name}</h3>
                     {trigger.message && (
-                      <p className="text-gray-700 mb-2">
-                        <span className="font-semibold">Message:</span> {trigger.message}
-                      </p>
+                      <p className="text-zinc-400 text-sm mb-2">"{trigger.message}"</p>
                     )}
                     {trigger.audience && (
-                      <p className="text-sm text-gray-600 mb-2">
-                        <span className="font-semibold">Audience:</span> {trigger.audience}
-                      </p>
-                    )}
-                    {trigger.platforms && trigger.platforms.length > 0 && (
-                      <p className="text-sm text-gray-600">
-                        <span className="font-semibold">Platforms:</span> {trigger.platforms.join(', ')}
+                      <p className="text-xs text-zinc-500">
+                        👥 <span className="text-zinc-400">{trigger.audience}</span>
                       </p>
                     )}
                   </div>
                 </div>
 
-                <details className="mb-4 cursor-pointer">
-                  <summary className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                    View full content →
-                  </summary>
-                  <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200">
-                    <pre className="text-xs text-gray-700 overflow-auto max-h-64 whitespace-pre-wrap break-words">
-                      {trigger.content}
-                    </pre>
-                  </div>
-                </details>
+                {trigger.content && (
+                  <details className="mb-4 cursor-pointer">
+                    <summary className="text-sm text-zinc-500 hover:text-zinc-400 font-medium py-2">
+                      View full content →
+                    </summary>
+                    <div className="mt-3 p-4 bg-zinc-950 rounded border border-zinc-800">
+                      <pre className="text-xs text-zinc-500 overflow-auto max-h-48 whitespace-pre-wrap break-words">
+                        {trigger.content.substring(0, 500)}...
+                      </pre>
+                    </div>
+                  </details>
+                )}
 
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleApprove(trigger.id)}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition"
+                    className="flex-1 px-4 py-3 bg-green-700 hover:bg-green-600 text-white rounded-lg font-medium transition"
                   >
                     ✓ Approve
                   </button>
                   <button
                     onClick={() => handleReject(trigger.id)}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded font-medium hover:bg-red-700 transition"
+                    className="flex-1 px-4 py-3 bg-red-700 hover:bg-red-600 text-white rounded-lg font-medium transition"
                   >
                     ✗ Reject
                   </button>
