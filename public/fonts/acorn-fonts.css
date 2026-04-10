@@ -1,0 +1,33 @@
+/* Acorn Font Family Declaration */
+
+@font-face {
+  font-family: 'Acorn';
+  src: url('/fonts/acorn-3.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Acorn';
+  src: url('/fonts/acorn-7.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Acorn';
+  src: url('/fonts/acorn-8.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Acorn';
+  src: url('/fonts/acorn-9.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}

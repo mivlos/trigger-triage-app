@@ -1,3 +1,22 @@
+@import url('/fonts/acorn-fonts.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Acorn font stacks */
+:root {
+  --font-acorn: 'Acorn', system-ui, -apple-system, sans-serif;
+}
+
+html {
+  font-family: var(--font-acorn);
+  background: linear-gradient(to br, #000000, #0d0d0d);
+}
+
+body {
+  background: linear-gradient(to br, #000000, #0d0d0d);
+  color: #f5f5f5;
+  margin: 0;
+  padding: 0;
+}
