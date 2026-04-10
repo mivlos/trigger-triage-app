@@ -1,5 +1,3 @@
 {
-  "env": {
-    "TRIGGERS_DIR": "@triggers_dir"
-  }
+  "buildCommand": "npm run build"
 }
